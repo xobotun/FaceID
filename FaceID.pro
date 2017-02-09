@@ -4,9 +4,11 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui\
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets\
+            multimedia\
+            multimediawidgets\
 
 TARGET = FaceID
 TEMPLATE = app
@@ -24,8 +26,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp\
+        webcam.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h\
+        webcam.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui\
+        webcam.ui\
+        webcamselect.ui
