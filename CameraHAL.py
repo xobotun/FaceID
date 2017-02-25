@@ -1,0 +1,17 @@
+import cv2
+import numpy as np
+
+class CameraHAL:
+	def __init__(self, cameraID=0, mirror=False):
+		self.cameraID = cameraID
+		self.camera = cv2.VideoCapture(cameraID)
+		self.mirror = mirror
+		self.frame = None
+	
+	def refresh(self):
+		ret_val, self.frame = self.camera.read()
+		if self.mirror: 
+			self.frame = cv2.flip(self.frame, 1)
+		
+	def is_open(self):
+		return self.camera is not None
