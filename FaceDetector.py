@@ -12,15 +12,33 @@ class FaceDetector:
 		return frame
 	
 	def cut_non_body_color(self, image):
-		pass
-		#mask = cv2.inRange(hsv, lower_range, upper_range)
+		height, width, channels = image.shape
+		mask = np.zeros((height,width), np.uint8)
+		for range in FaceDetector.von_Luschan:
+			lower = self.make_lower_range(range)
+			upper = self.make_upper_range(range)
+			mask += cv2.inRange(image, lower, upper)
+		cv2.imshow('tmp', mask)
+		return image
+	
+	def make_lower_range(self, range):
+		range[0] += FaceDetector.delta_blue[0]
+		range[1] += FaceDetector.delta_green[0]
+		range[2] += FaceDetector.delta_red[0]
+		return np.array(range, dtype = "uint8")
 		
+	def make_upper_range(self, range):
+		range[0] += FaceDetector.delta_blue[1]
+		range[1] += FaceDetector.delta_green[1]
+		range[2] += FaceDetector.delta_red[1]
+		return np.array(range, dtype = "uint8")
+	
 	def get_faces(self):
 		pass
 	
-	delta_blue = [-10, 10]
-	delta_green = [-10, 10]
-	delta_red = [-20, 20]
+	delta_blue = [-20, 50]
+	delta_green = [-20, 50]
+	delta_red = [-30, 50]
 	
 	# BGR
 	von_Luschan = [

@@ -12,6 +12,12 @@ class CameraHAL:
 		ret_val, self.frame = self.camera.read()
 		if self.mirror: 
 			self.frame = cv2.flip(self.frame, 1)
+		cv2.imshow('tmp2', self.frame)
 		
+	def get_frame(self):
+		if self.frame is None:
+			self.refresh()
+		return self.frame
+	
 	def is_open(self):
 		return self.camera is not None
