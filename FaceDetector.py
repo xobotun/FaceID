@@ -1,86 +1,67 @@
 import cv2
 import numpy as np
+import time
 from CameraHAL import CameraHAL
 
 
 class FaceDetector:
-    def __init__(self, camera):
+    def __init__(self, camera, convolution_resolution=16, skin_erode_factor=2, skin_dilate_factor=10):
         self.camera = camera
+        self.convolution_resolution = convolution_resolution
+        self.skin_erode_factor = skin_erode_factor
+        self.skin_dilate_factor = skin_dilate_factor
+        self.previous_mask = None
 
     def detect_faces(self):
         frame = self.camera.frame
+        begin = self.get_milliseconds()
         frame = self.cut_non_body_color(frame)
+        self.get_faces(frame)
+        print "recognition took {} milliseconds".format(self.get_milliseconds() - begin)
         return frame
 
     def cut_non_body_color(self, image):
         height, width, channels = image.shape
         mask = np.zeros((height, width), np.uint8)
-        for range in FaceDetector.von_Luschan:
-            lower = self.make_lower_range(range)
-            upper = self.make_upper_range(range)
-            mask += cv2.inRange(image, lower, upper)
-        cv2.imshow('tmp', mask)
-        return image
+        resolution = self.convolution_resolution # In px. Greater the lower.
 
-    def make_lower_range(self, range):
-        range[0] += FaceDetector.delta_blue[0]
-        range[1] += FaceDetector.delta_green[0]
-        range[2] += FaceDetector.delta_red[0]
-        return np.array(range, dtype="uint8")
+        for i in np.arange(0, width, resolution):
+            for j in np.arange(0, height, resolution):
+                if self.check_is_within_ellipse(image[j,i]):
+                    mask[j, i] = 255
 
-    def make_upper_range(self, range):
-        range[0] += FaceDetector.delta_blue[1]
-        range[1] += FaceDetector.delta_green[1]
-        range[2] += FaceDetector.delta_red[1]
-        return np.array(range, dtype="uint8")
+        cv2.imshow('mask', mask)
 
-    def get_faces(self):
-        pass
+        mask = cv2.dilate(mask, np.ones((resolution, resolution), np.uint8))    # stretch points into regions.
+        mask = cv2.erode(mask,  np.ones((resolution * self.skin_erode_factor + 1, resolution * self.skin_erode_factor + 1), np.uint8))    # if there are less than <self.skin_erode_factor> points nearby, remove them and contract regions into points again.
+        mask = cv2.dilate(mask, np.ones((resolution * self.skin_dilate_factor + 1, resolution * self.skin_dilate_factor + 1), np.uint8))    # stretch remaining points <self.skin_dilate_factor> times.
 
-    delta_blue = [-20, 50]
-    delta_green = [-20, 50]
-    delta_red = [-30, 50]
+        if self.previous_mask is None:
+            self.previous_mask = mask
+        full_mask = cv2.bitwise_or(mask, self.previous_mask)
+        self.previous_mask = np.copy(mask)
 
-    # BGR
-    von_Luschan = [
-        # 1-9
-        [245, 242, 244],
-        [233, 235, 236],
-        [247, 249, 250],
-        [230, 251, 253],
-        [230, 246, 252],
-        [229, 248, 253],
-        [239, 240, 250],
-        [229, 234, 243],
-        [234, 241, 244],
-        # 10-18
-        [242, 253, 251],
-        [235, 247, 251],
-        [225, 246, 254],
-        [223, 250, 254],
-        [223, 250, 254],
-        [195, 231, 241],
-        [173, 226, 239],
-        [147, 210, 224],
-        [151, 226, 242],
-        # 19-27
-        [157, 214, 235],
-        [133, 217, 235],
-        [103, 197, 226],
-        [104, 194, 224],
-        [123, 193, 223],
-        [119, 184, 222],
-        [100, 164, 198],
-        [98, 151, 188],
-        [67, 107, 156],
-        # 28-36
-        [60, 88, 142],
-        [48, 77, 121],
-        [20, 49, 100],
-        [32, 48, 101],
-        [33, 49, 96],
-        [41, 50, 87],
-        [21, 32, 64],
-        [41, 37, 49],
-        [46, 28, 27],
-    ]
+        masked_image = cv2.bitwise_and(image, image, mask=full_mask)
+        cv2.imshow('masked_image', masked_image)
+        return masked_image
+
+    def get_faces(self, image):
+        face_cascade = cv2.CascadeClassifier("E:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml")
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+        for (x, y, w, h) in faces:
+            cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+        cv2.imshow('img', image)
+
+    def check_is_within_ellipse(self, point):
+        a = 149.456258494
+        focus_1 = np.array([201.738200082, 224.099463072, 275.804410926])
+        focus_2 = np.array([43.5045978443, 60.5293119777, 94.7957947733])
+        dist_1 = np.linalg.norm(focus_1 - point)
+        dist_2 = np.linalg.norm(focus_2 - point)
+        return (dist_1 + dist_2) < (2 * a)
+
+    def get_milliseconds(self):
+        return int(round(time.time() * 1000))
