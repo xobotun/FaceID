@@ -26,6 +26,7 @@ class FaceDetector:
         #begin = self.get_milliseconds()
         if self.should_fully_rescan():
             frame = self.cut_non_body_color(frame)
+            self.delete_unused_face_objects()
 
         self.get_faces(frame)
         self.draw_faces(frame)
@@ -58,9 +59,14 @@ class FaceDetector:
         #cv2.imshow('masked_image', masked_image)
         return masked_image
 
+    def delete_unused_face_objects(self):
+        tmp = self.faces
+        for face in tmp:
+            if face.should_be_deleted:
+                self.faces.remove(face)
+
     def get_faces(self, image):
         if self.should_fully_rescan():
-            self.faces = []
             self.get_faces_on_image(image)
         else:
             self.filter_faces(image)
@@ -69,7 +75,11 @@ class FaceDetector:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(gray, 1.3, 5)
         for coordinate in faces:
-            self.faces.append(Face(coordinate))
+            collides_with_other_face = False
+            for face in self.faces:
+                collides_with_other_face = collides_with_other_face or face.intersects_with(coordinate)
+            if not collides_with_other_face:
+                self.faces.append(Face(coordinate))
 
     def filter_faces(self, image):
         for face in self.faces:
@@ -86,10 +96,12 @@ class FaceDetector:
                 face.coordinates = (old_face_coords[0] + x, old_face_coords[1] + y, w, h)
 
     def draw_faces(self, frame):
+        font = cv2.FONT_HERSHEY_SIMPLEX
         for face in self.faces:
             x, y, w, h = face.coordinates
             if not face.should_be_deleted:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                cv2.putText(frame, str(face.id), (x, y + h), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
         cv2.imshow('frame', frame)
 
     def check_is_within_ellipse(self, point):
