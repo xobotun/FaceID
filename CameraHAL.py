@@ -3,9 +3,9 @@ import numpy as np
 
 
 class CameraHAL:
-    def __init__(self, cameraID=0, mirror=False):
-        self.cameraID = cameraID
-        self.camera = cv2.VideoCapture(cameraID)
+    def __init__(self, camera_source=0, mirror=False):
+        self.camera_source = camera_source
+        self.camera = cv2.VideoCapture(camera_source)
         self.mirror = mirror
         self.frame = None
 

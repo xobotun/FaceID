@@ -102,6 +102,12 @@ class FaceDetector:
             if not face.should_be_deleted:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 cv2.putText(frame, str(face.id), (x, y + h), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
+                #
+                # face.crop_frame(frame)
+                # face.image[:, :, 0] = cv2.equalizeHist(face.image[:, :, 0])
+                # face.image[:, :, 1] = cv2.equalizeHist(face.image[:, :, 1])
+                # face.image[:, :, 2] = cv2.equalizeHist(face.image[:, :, 2])
+
         cv2.imshow('frame', frame)
 
     def check_is_within_ellipse(self, point):
