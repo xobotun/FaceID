@@ -22,17 +22,16 @@ class FaceDetector:
     def should_fully_rescan(self):
         return self.current_frame % self.rescan_every_nth_frame == 0
 
-    def detect_faces(self):
+    def refresh(self):
         frame = self.camera.get_frame()
-        #begin = self.get_milliseconds()
+
         if self.should_fully_rescan():
+            self.delete_unused_face_objects()
             if self.should_cut_body_color:
                 frame = self.cut_non_body_color(frame)
-            self.delete_unused_face_objects()
 
         self.get_faces(frame)
         self.draw_faces(frame)
-        #print "recognition took {} milliseconds".format(self.get_milliseconds() - begin)
         self.current_frame += 1
         return frame
 
@@ -46,7 +45,7 @@ class FaceDetector:
                 if self.check_is_within_ellipse(image[j,i]):
                     mask[j, i] = 255
 
-       #cv2.imshow('mask', mask)
+        #cv2.imshow('mask', mask)
 
         mask = cv2.dilate(mask, np.ones((resolution, resolution), np.uint8))    # stretch points into regions.
         mask = cv2.erode(mask,  np.ones((resolution * self.skin_erode_factor + 1, resolution * self.skin_erode_factor + 1), np.uint8))    # if there are less than <self.skin_erode_factor> points nearby, remove them and contract regions into points again.
@@ -81,7 +80,10 @@ class FaceDetector:
             for face in self.faces:
                 collides_with_other_face = collides_with_other_face or face.intersects_with(coordinate)
             if not collides_with_other_face:
-                self.faces.append(Face(coordinate))
+                face = Face(coordinate)
+                face.crop_frame(image)
+                self.faces.append(face)
+
 
     def filter_faces(self, image):
         for face in self.faces:
@@ -96,24 +98,11 @@ class FaceDetector:
                 y -= self.face_tracking_margin
                 old_face_coords = face.coordinates
                 face.coordinates = (old_face_coords[0] + x, old_face_coords[1] + y, w, h)
+                face.crop_frame(image)
 
     def draw_faces(self, frame):
-        font = cv2.FONT_HERSHEY_SIMPLEX
         for face in self.faces:
-            x, y, w, h = face.coordinates
-            if not face.should_be_deleted:
-                #face.crop_frame(frame)
-                #cv2.imshow(str(face.id), face.image)
-
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                cv2.putText(frame, str(face.id), (x, y + h), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
-
-
-                #
-                #
-                # face.image[:, :, 0] = cv2.equalizeHist(face.image[:, :, 0])
-                # face.image[:, :, 1] = cv2.equalizeHist(face.image[:, :, 1])
-                # face.image[:, :, 2] = cv2.equalizeHist(face.image[:, :, 2])
+            face.draw(frame)
 
         cv2.imshow('frame@camera#' + str(self.camera), frame)
 

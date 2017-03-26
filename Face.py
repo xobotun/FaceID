@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
 
+
 face_id_counter = 0
+font = cv2.FONT_HERSHEY_SIMPLEX
 
 class Face:
     def __init__(self, coordinates=(0,0,0,0), owner_id=0, owner_name="???"):
@@ -13,6 +15,7 @@ class Face:
         global face_id_counter
         face_id_counter += 1
         self.id = face_id_counter
+        self.identified = False
 
     def crop_frame(self, frame, additional_margin=0):
         x, y, w, h = self.coordinates
@@ -29,3 +32,19 @@ class Face:
             return False
         else:
             return True
+
+    def draw(self, frame):
+        global font
+        x, y, w, h = self.coordinates
+        if not self.should_be_deleted:
+            # face.crop_frame(frame)
+            # cv2.imshow(str(face.id), face.image)
+
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 128, 0), 1)
+            cv2.putText(frame,self.owner_name, (x, y + h), font, 0.5, (192, 64, 64), 1, cv2.LINE_AA)
+
+            #
+            #
+            # face.image[:, :, 0] = cv2.equalizeHist(face.image[:, :, 0])
+            # face.image[:, :, 1] = cv2.equalizeHist(face.image[:, :, 1])
+            # face.image[:, :, 2] = cv2.equalizeHist(face.image[:, :, 2])
