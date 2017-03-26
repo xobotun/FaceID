@@ -25,7 +25,7 @@ class Camera:
             self.fps = self._fps_counter
             self._fps_counter = 0
             self._last_fps_timestamp = self.get_milliseconds()
-            print "Camera #{} fps is {}".format(self.camera.cameraID, self.fps)
+            print "Camera #{} fps is {}".format(self.camera.camera_source, self.fps)
 
     def get_faces(self):
         pass
