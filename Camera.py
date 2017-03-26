@@ -7,8 +7,8 @@ import time
 
 
 class Camera:
-    def __init__(self, camera_source=0, mirror=False):
-        self.camera = CameraHAL(camera_source, mirror)
+    def __init__(self, camera_source=0, mirror=False, resize_scale=1):
+        self.camera = CameraHAL(camera_source, mirror, resize_scale)
         if not self.camera.is_open():
             print "Camera #{} cannot be open!".format(camera_source)
         self.detector = FaceDetector(self.camera)

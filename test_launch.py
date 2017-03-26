@@ -1,10 +1,3 @@
-import cv2
-from Camera import Camera
+from Application import Application
 
-camera = Camera(camera_source=0, mirror=True)
-while True:
-    camera.refresh()
-
-    if cv2.waitKey(1) == 27: # ESC
-        break
-
+app = Application()

@@ -17,15 +17,17 @@ class FaceDetector:
         self.current_frame = 0
         self.face_cascade = cv2.CascadeClassifier("E:/opencv/build/etc/haarcascades/haarcascade_frontalface_default.xml")
         self.face_tracking_margin = 32
+        self.should_cut_body_color = False
 
     def should_fully_rescan(self):
         return self.current_frame % self.rescan_every_nth_frame == 0
 
     def detect_faces(self):
-        frame = self.camera.frame
+        frame = self.camera.get_frame()
         #begin = self.get_milliseconds()
         if self.should_fully_rescan():
-            frame = self.cut_non_body_color(frame)
+            if self.should_cut_body_color:
+                frame = self.cut_non_body_color(frame)
             self.delete_unused_face_objects()
 
         self.get_faces(frame)
@@ -100,15 +102,20 @@ class FaceDetector:
         for face in self.faces:
             x, y, w, h = face.coordinates
             if not face.should_be_deleted:
+                #face.crop_frame(frame)
+                #cv2.imshow(str(face.id), face.image)
+
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 cv2.putText(frame, str(face.id), (x, y + h), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+
                 #
-                # face.crop_frame(frame)
+                #
                 # face.image[:, :, 0] = cv2.equalizeHist(face.image[:, :, 0])
                 # face.image[:, :, 1] = cv2.equalizeHist(face.image[:, :, 1])
                 # face.image[:, :, 2] = cv2.equalizeHist(face.image[:, :, 2])
 
-        cv2.imshow('frame', frame)
+        cv2.imshow('frame@camera#' + str(self.camera), frame)
 
     def check_is_within_ellipse(self, point):
         a = 149.456258494
