@@ -7,10 +7,10 @@ import time
 
 
 class Camera:
-    def __init__(self, cameraID=0, mirror=False):
-        self.camera = CameraHAL(cameraID, mirror)
+    def __init__(self, camera_source=0, mirror=False):
+        self.camera = CameraHAL(camera_source, mirror)
         if not self.camera.is_open():
-            print "Camera #{} cannot be open!".format(cameraID)
+            print "Camera #{} cannot be open!".format(camera_source)
         self.detector = FaceDetector(self.camera)
         self._last_fps_timestamp = self.get_milliseconds()
         self._fps_counter = 0
