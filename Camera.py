@@ -20,6 +20,9 @@ class Camera:
         self.camera.refresh()
         self.detector.detect_faces()
 
+        self.count_fps()
+
+    def count_fps(self):
         self._fps_counter += 1
         if self.get_milliseconds() - self._last_fps_timestamp > 1000:
             self.fps = self._fps_counter
