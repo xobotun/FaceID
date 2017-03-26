@@ -25,4 +25,4 @@ class CameraHAL:
         return self._frame
 
     def is_open(self):
-        return self.camera is not None
+        return self.camera.isOpened()

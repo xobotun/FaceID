@@ -9,18 +9,20 @@ import time
 
 class Camera:
     def __init__(self, camera_source=0, mirror=False, resize_scale=1, should_draw_faces=True):
-        self.camera = CameraHAL(camera_source, mirror, resize_scale)
-        if not self.camera.is_open():
-            print "Camera #{} cannot be open!".format(camera_source)
-        self.detector = FaceDetector(self.camera)
+        self.camera_hal = CameraHAL(camera_source, mirror, resize_scale)
+        if not self.camera_hal.is_open():
+            #print "Camera #{} cannot be open!".format(camera_source)
+            raise NameError("Camera #{} cannot be open!".format(camera_source))
+        self.detector = FaceDetector(self.camera_hal)
         self._last_fps_timestamp = self.get_milliseconds()
         self._fps_counter = 0
         self.fps = 0
         self.should_draw_faces = True
         self.excluded_persons = []
+        self.is_active = False
 
     def refresh(self):
-        self.camera.refresh()
+        self.camera_hal.refresh()
         self.detector.refresh()
 
         identify_faces(self.detector.faces)
@@ -35,7 +37,7 @@ class Camera:
             self.fps = self._fps_counter
             self._fps_counter = 0
             self._last_fps_timestamp = self.get_milliseconds()
-            print "Camera #{} fps is {}".format(self.camera.camera_source, self.fps)
+            print "Camera #{} fps is {}".format(self.camera_hal.camera_source, self.fps)
 
     def add_identified_persons_to_exclude_list(self):
         self.excluded_persons = []
@@ -47,7 +49,7 @@ class Camera:
     def draw_faces(self):
         if self.should_draw_faces:
             for face in self.detector.faces:
-                face.draw(self.camera.get_frame())
+                face.draw(self.camera_hal.get_frame())
 
     def get_faces(self):
         pass

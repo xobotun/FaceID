@@ -104,7 +104,7 @@ class FaceDetector:
         for face in self.faces:
             face.draw(frame)
 
-        cv2.imshow('frame@camera#' + str(self.camera), frame)
+        cv2.imshow('frame@camera_hal#' + str(self.camera), frame)
 
     def check_is_within_ellipse(self, point):
         a = 149.456258494
