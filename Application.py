@@ -3,8 +3,8 @@ import numpy as np
 from Camera import Camera
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import QThread
+from PyQt5.QtGui import QFont, QImage, QPainter, QPaintEvent, QPixmap
+from PyQt5.QtCore import QThread, QTimer
 from threading import Thread
 
 cameras = []
@@ -22,7 +22,9 @@ class Application:
         work = WorkingThread()
         work.start()
 
-        sys.exit(self.app.exec_())
+        retval = self.app.exec_()
+        print('\n'.join(repr(w) for w in self.app.allWidgets()))
+        sys.exit(retval)
 
     def print_lib_data(self):
         print "OpenCV version : {0}".format(cv2.__version__)
@@ -63,12 +65,52 @@ class BasicWindow(QWidget):
     def init_ui(self):
         #QToolTip.setFont(QFont('SansSerif', 10))
 
-        self.setToolTip('This is a <b>QWidget</b> widget')
+        #self.setToolTip('This is a <b>QWidget</b> widget')
 
-        btn = QPushButton('Button', self)
-        btn.setToolTip('This is a <b>QPushButton</b> widget')
-        btn.resize(btn.sizeHint())
-        btn.move(50, 50)
+        tmp = CameraImageWidget(self, cameras[0])
+
+        #btn = QPushButton('Button', self)
+        #btn.setToolTip('This is a <b>QPushButton</b> widget')
+        #btn.resize(btn.sizeHint())
+        #btn.move(0, 0)
 
         self.setGeometry(300, 300, 300, 200)
         self.setWindowTitle('Tooltips')
+
+class CameraImageWidget(QWidget):
+    def __init__(self, parent, camera=None):
+        super(QWidget, self).__init__(parent)
+        self.camera = camera
+        self.updating = True
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_frame)
+        self.timer.start(30)
+
+    def prepare_image(self, frame):
+        height, width, channels = frame.shape
+        bytesPerLine = width * channels
+
+        image = QImage(frame, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
+        parent_width = self.parent().width()
+        parent_height = self.parent().height()
+        image = QPixmap.fromImage(image).scaled(parent_width, parent_height).toImage()
+
+        self.resize(parent_width, parent_height)
+
+        return image
+
+    def paintEvent(self, event):
+        painter = QPainter()
+        painter.begin(self)
+
+        if self.camera is not None:
+            frame = self.camera.camera_hal.get_frame()
+            image_to_be_drawn = self.prepare_image(frame)
+            painter.drawImage(0, 0, image_to_be_drawn)
+
+        painter.end()
+
+    def update_frame(self):
+        if self.updating:
+            self.update()
