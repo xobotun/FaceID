@@ -3,8 +3,7 @@ import Events
 notifiers = []
 
 class Notifier:
-    def __init__(self, event_type):
-        self.event_type = event_type
+    def __init__(self):
         self.actions = []
         self.events = []
         global notifiers
@@ -23,13 +22,11 @@ class Notifier:
         processed_events = []
 
         for event in self.events:
-            if not event.processed:
-                processed_events.append(event)
-                for action in self.actions:
-                    action.do(event)
+            processed_events.append(event)
+            for action in self.actions:
+                action.do(event)
 
         for event in processed_events:
             self.events.remove(event)
-
 
 
