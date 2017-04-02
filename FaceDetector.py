@@ -6,8 +6,9 @@ from Face import Face
 
 
 class FaceDetector:
-    def __init__(self, camera, convolution_resolution=16, skin_erode_factor=2, skin_dilate_factor=10, rescan_every_nth_frame=16):
-        self.camera = camera
+    def __init__(self, cameraHAL, camera,  convolution_resolution=16, skin_erode_factor=2, skin_dilate_factor=10, rescan_every_nth_frame=16):
+        self.camera = cameraHAL
+        self.parent = camera
         self.convolution_resolution = convolution_resolution
         self.skin_erode_factor = skin_erode_factor
         self.skin_dilate_factor = skin_dilate_factor
@@ -65,6 +66,7 @@ class FaceDetector:
         for face in tmp:
             if face.should_be_deleted:
                 self.faces.remove(face)
+                self.parent.faces_disappeared.append(face)
 
     def get_faces(self, image):
         if self.should_fully_rescan():
@@ -83,6 +85,7 @@ class FaceDetector:
                 face = Face(coordinate)
                 face.crop_frame(image)
                 self.faces.append(face)
+                self.parent.new_faces.append(face)
 
 
     def filter_faces(self, image):

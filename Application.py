@@ -3,10 +3,12 @@ import numpy as np
 from Camera import Camera
 import Events
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFrame, QSpacerItem, QSizePolicy
 from PyQt5.QtGui import QFont, QImage, QPainter, QPaintEvent, QPixmap
 from PyQt5.QtCore import QThread, QTimer
 from threading import Thread
+from Notifiers import Notifier
+import traceback
 
 cameras = []
 
@@ -25,6 +27,8 @@ class Application:
 
         retval = self.app.exec_()
         print('\n'.join(repr(w) for w in self.app.allWidgets()))
+
+        work.running = False
         sys.exit(retval)
 
     def print_lib_data(self):
@@ -59,6 +63,7 @@ class WorkingThread(QThread):
                 if cv2.waitKey(1) == 27:  # ESC
                     break
 
+
 # Windows
 
 class FaceList:
@@ -70,18 +75,26 @@ class FaceList:
     def init_ui(self):
         self.label = QLabel("No faces detected")
         self.layout.addWidget(self.label)
+        self.spacer = QSpacerItem(1, 9999, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.layout.addItem(self.spacer)
 
     def add_face(self, face):
-        face_widget = PersonOnCameraWidget(self, face)
+        self.layout.removeItem(self.spacer)
+        face_widget = PersonOnCameraWidget(face)
         self.face_to_widget[face] = face_widget
         self.layout.addWidget(face_widget)
-        self.label.setVisible(False)
+        #self.label.setVisible(False)
+        self.label.setText("{} faces detected:".format(len(self.face_to_widget)))
+        self.layout.addItem(self.spacer)
 
     def remove_face(self, face):
         if self.face_to_widget.has_key(face):
-            self.layout.removeWidget(self.face_to_widget.pop(face))
+            widget = self.face_to_widget.pop(face)
+            widget.deleteLater()
+            self.layout.removeWidget(widget)
         if len(self.face_to_widget) == 0:
-            self.label.setVisible(True)
+            #self.label.setVisible(True)
+            self.label.setText("No faces detected")
 
 class FaceAdder:
     def __init__(self, face_list):
@@ -104,6 +117,11 @@ class CameraWindow(QWidget):
         super(QWidget, self).__init__()
         self.camera = camera
         self.init_ui()
+        self.init_notifier()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_notifier)
+        self.timer.start(30)
 
     def init_ui(self):
         self.layout = QHBoxLayout(self)
@@ -115,7 +133,7 @@ class CameraWindow(QWidget):
         self.layout.addWidget(VLine())
 
         self.face_list_container = QWidget()
-        self.face_list_layout = FaceList(self.face_list_container)
+        self.face_list = FaceList(self.face_list_container)
         self.face_list_container.setMaximumWidth(256 + 2 * 8)
         self.face_list_container.setMinimumWidth(64 + 2 * 8)
 
@@ -124,8 +142,17 @@ class CameraWindow(QWidget):
         self.layout.addWidget(self.face_list_container)
 
         self.setLayout(self.layout)
-        self.setGeometry(300, 300, 300, 200)
-        self.setWindowTitle('Tooltips')
+        self.setGeometry(300, 300, 640 + 256, 480)
+        self.setWindowTitle(self.camera.__str__())
+
+    def init_notifier(self):
+        self.notifier = Notifier()
+        self.notifier.subscribe(FaceAdder(self.face_list))
+        self.notifier.subscribe(FaceRemover(self.face_list))
+        self.camera.add_notifier(self.notifier)
+
+    def update_notifier(self):
+        self.notifier.refresh()
 
 def HLine():
     toto = QFrame()
@@ -140,8 +167,8 @@ def VLine():
     return toto
 
 class PersonOnCameraWidget(QWidget):
-    def __init__(self, parent, face):
-        super(QWidget, self).__init__(parent)
+    def __init__(self, face):
+        super(QWidget, self).__init__()
         self.face = face
         self.init_ui()
         #self.setStyleSheet("border:1px solid rgb(200, 200, 200); ")
@@ -153,11 +180,11 @@ class PersonOnCameraWidget(QWidget):
         self.animated_face.setMaximumWidth(64)
         self.animated_face.setMaximumHeight(64)
 
-        self.name_label = QLabel("none")#self.face.owner_name)
-        self.proof_label = QLabel("0%")
+        self.name_label = QLabel(self.face.owner_name)#self.face.owner_name)
+        self.proof_label = QLabel(str(self.face.probability) + "%")
 
         self.layout = QHBoxLayout(self)
-        self.layout.setSpacing(8)
+        #self.layout.setSpacing(8)
 
         self.layout.addWidget(self.animated_face)
 
@@ -195,6 +222,9 @@ class CameraImageWidget(QWidget):
 
         height, width, channels = frame.shape
         bytesPerLine = width * channels
+
+        if not frame.flags["C_CONTIGUOUS"]:
+            frame = np.ascontiguousarray(frame)
 
         image = QImage(frame, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
 

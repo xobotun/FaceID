@@ -16,6 +16,7 @@ class Face:
         face_id_counter += 1
         self.id = face_id_counter
         self.identified = False
+        self.probability = 146
 
     def crop_frame(self, frame, additional_margin=0):
         x, y, w, h = self.coordinates
