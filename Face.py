@@ -41,10 +41,13 @@ class Face:
             # cv2.imshow(str(face.id), face.image)
 
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 128, 0), 1)
-            cv2.putText(frame,self.owner_name, (x, y + h), font, 0.5, (192, 64, 64), 1, cv2.LINE_AA)
+            cv2.putText(frame, self.owner_name, (x, y + h), font, 0.5, (192, 64, 64), 1, cv2.LINE_AA)
 
             #
             #
             # face.image[:, :, 0] = cv2.equalizeHist(face.image[:, :, 0])
             # face.image[:, :, 1] = cv2.equalizeHist(face.image[:, :, 1])
             # face.image[:, :, 2] = cv2.equalizeHist(face.image[:, :, 2])
+
+    def get_frame(self):
+        return self.image

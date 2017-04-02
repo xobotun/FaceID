@@ -56,3 +56,6 @@ class Camera:
 
     def get_milliseconds(self):
         return int(round(time.time() * 1000))
+
+    def get_frame(self):
+        return self.camera_hal.get_frame()

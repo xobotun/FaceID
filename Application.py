@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from Camera import Camera
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton, QLabel, QHBoxLayout, QVBoxLayout
 from PyQt5.QtGui import QFont, QImage, QPainter, QPaintEvent, QPixmap
 from PyQt5.QtCore import QThread, QTimer
 from threading import Thread
@@ -42,6 +42,7 @@ class Application:
             else:
                 cameras.append(camera)
 
+
 class WorkingThread(QThread):
     def __init__(self):
         super(QThread, self).__init__()
@@ -57,6 +58,8 @@ class WorkingThread(QThread):
                 if cv2.waitKey(1) == 27:  # ESC
                     break
 
+# Windows
+
 class BasicWindow(QWidget):
     def __init__(self):
         super(QWidget, self).__init__()
@@ -67,7 +70,7 @@ class BasicWindow(QWidget):
 
         #self.setToolTip('This is a <b>QWidget</b> widget')
 
-        tmp = CameraImageWidget(self, cameras[0])
+        tmp = PersonOnCameraWidget(self, cameras[0])
 
         #btn = QPushButton('Button', self)
         #btn.setToolTip('This is a <b>QPushButton</b> widget')
@@ -76,6 +79,37 @@ class BasicWindow(QWidget):
 
         self.setGeometry(300, 300, 300, 200)
         self.setWindowTitle('Tooltips')
+
+
+class PersonOnCameraWidget(QWidget):
+    def __init__(self, parent, face):
+        super(QWidget, self).__init__(parent)
+        self.face = face
+        self.init_ui()
+
+    def init_ui(self):
+        self.animated_face = CameraImageWidget(None, self.face)
+        self.animated_face.setMinimumWidth(64)
+        self.animated_face.setMinimumHeight(64)
+        self.animated_face.setMaximumWidth(64)
+        self.animated_face.setMaximumHeight(64)
+
+        self.name_label = QLabel("none")#self.face.owner_name)
+        self.proof_label = QLabel("0%")
+
+        self.layout = QHBoxLayout(self)
+        self.layout.setSpacing(8)
+
+        self.layout.addWidget(self.animated_face)
+
+        self.inner_layout = QVBoxLayout(self)
+        self.inner_layout.setSpacing(8)
+
+        self.inner_layout.addWidget(self.name_label)
+        self.inner_layout.addWidget(self.proof_label)
+
+        self.layout.addLayout(self.inner_layout)
+
 
 class CameraImageWidget(QWidget):
     def __init__(self, parent, camera=None):
@@ -92,10 +126,15 @@ class CameraImageWidget(QWidget):
         bytesPerLine = width * channels
 
         image = QImage(frame, width, height, bytesPerLine, QImage.Format_RGB888).rgbSwapped()
+
         parent_width = self.parent().width()
         parent_height = self.parent().height()
-        image = QPixmap.fromImage(image).scaled(parent_width, parent_height).toImage()
+        if parent_width < 64:
+            parent_width = 64
+        if parent_height < 64:
+            parent_height = 64
 
+        image = QPixmap.fromImage(image).scaled(parent_width, parent_height).toImage()
         self.resize(parent_width, parent_height)
 
         return image
@@ -105,7 +144,7 @@ class CameraImageWidget(QWidget):
         painter.begin(self)
 
         if self.camera is not None:
-            frame = self.camera.camera_hal.get_frame()
+            frame = self.camera.get_frame()
             image_to_be_drawn = self.prepare_image(frame)
             painter.drawImage(0, 0, image_to_be_drawn)
 
