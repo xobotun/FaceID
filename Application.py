@@ -3,9 +3,10 @@ import numpy as np
 from Camera import Camera
 import Events
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFrame, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QToolTip, QPushButton, QLabel, QHBoxLayout, QVBoxLayout, QFrame, QSpacerItem, QSizePolicy, QDialog, QMainWindow
 from PyQt5.QtGui import QFont, QImage, QPainter, QPaintEvent, QPixmap
 from PyQt5.QtCore import QThread, QTimer
+import PyQt5.QtCore as QtCore
 from threading import Thread
 from Notifiers import Notifier
 import traceback
@@ -16,10 +17,10 @@ class Application:
     def __init__(self):
         self.print_lib_data()
         self.show_trump()
-        self.open_all_webcameras()
+        #self.open_all_webcameras()
         self.app = QApplication(sys.argv)
 
-        w = CameraWindow(cameras[0])
+        w = MainWindow()
         w.show()
 
         work = WorkingThread()
@@ -65,6 +66,48 @@ class WorkingThread(QThread):
 
 
 # Windows
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super(QWidget, self).__init__()
+        self.init_ui()
+        self.camera_windows = {}
+
+    def init_ui(self):
+        self.layout = QHBoxLayout(self)
+        self.layout.setSpacing(8)
+
+        self.btn1 = QPushButton()
+        self.btn1.setText("Camera#0")
+        self.btn1.clicked.connect(lambda: self.new_camera(0))
+        self.layout.addWidget(self.btn1)
+
+        self.btn2 = QPushButton()
+        self.btn2.setText("Camera#1")
+        self.btn2.clicked.connect(lambda: self.new_camera(1))
+        self.layout.addWidget(self.btn2)
+
+        self.btn3 = QPushButton()
+        self.btn3.setText("Trump")
+        self.btn3.clicked.connect(lambda: self.new_camera("vid2.mp4"))
+        self.layout.addWidget(self.btn3)
+
+        self.setLayout(self.layout)
+        self.setGeometry(300, 300, 640 + 256, 480)
+        self.setWindowTitle("FaceID")
+        self.showMaximized()
+
+    def new_camera(self, i):
+        camera = Camera(i, mirror=True)
+        cameras.append(camera)
+        self.camera_windows[i] = CameraWindow(camera)
+        self.camera_windows[i].setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.camera_windows[i].show()
+
+    def closeEvent(self, event):
+        for window in self.camera_windows:
+            window.close()
+        event.accept()
 
 class FaceList:
     def __init__(self, parent):
@@ -153,6 +196,10 @@ class CameraWindow(QWidget):
 
     def update_notifier(self):
         self.notifier.refresh()
+
+    def closeEvent(self, event):
+        cameras.remove(self.camera)
+        event.accept()
 
 def HLine():
     toto = QFrame()

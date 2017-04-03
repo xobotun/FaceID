@@ -8,6 +8,7 @@ class CameraHAL:
         self.camera = cv2.VideoCapture(camera_source)
         self.mirror = mirror
         self._frame = None
+        self.frame = None
         self.resize_scale = resize_scale
 
     def refresh(self):
@@ -18,11 +19,12 @@ class CameraHAL:
             if self.resize_scale != 1:
                 height, width = self._frame.shape[:2]
                 self._frame = cv2.resize(self._frame, (width*self.resize_scale, height*self.resize_scale), interpolation=cv2.INTER_CUBIC)
+            self.frame = self._frame
 
     def get_frame(self):
-        if self._frame is None:
-            self._frame = np.array([[[0,0,0]]], dtype=np.uint8)
-        return self._frame
+        if self.frame is None:
+            self.frame = np.array([[[0,0,0]]], dtype=np.uint8)
+        return self.frame
 
     def is_open(self):
         return self.camera.isOpened()
